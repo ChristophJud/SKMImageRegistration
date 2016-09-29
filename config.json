@@ -1,0 +1,5 @@
+{
+    "reference_filename":   "/tmp/ref2.vtk",
+    "target_filename":      "/tmp/tar2.vtk",
+    "weight_filename":      "none"
+}

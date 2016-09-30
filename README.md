@@ -76,7 +76,7 @@ SKM is licensed under the Apache 2.0 license. For details, consider the LICENSE 
 
 If you can use this software in any way, please cite us in your publications:
 
-[2016a] Christoph Jud, Nadia Möri, and Philippe C. Cattin. "Sparse Kernel Machines for Discontinuous Registration and Nonstationary Regularization". In *Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition Workshops*, pages 9-16, 2016.
+[2016a] Christoph Jud, Nadia Möri, and Philippe C. Cattin. "Sparse Kernel Machines for Discontinuous Registration and Nonstationary Regularization". In *Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition Workshops*, pages 9-16, 2016. [link](http://www.cv-foundation.org/openaccess/content_cvpr_2016_workshops/w15/papers/Jud_Sparse_Kernel_Machines_CVPR_2016_paper.pdf)
 
 and/or
 

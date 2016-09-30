@@ -1,0 +1,27 @@
+Sparse Kernel Machine for Image Registration
+Copyright 2015-2016 University of Basel
+
+This software is distributed unter the
+Apache 2.0 License.
+
+See LICENSE file for details.
+
+----------------------------------------------------
+
+The software contains code and links to libraries from third parties
+that have different copyrights.
+
+They are:
+
+1)  ITK:            Copyright by Insight Software Consortium
+                    Distributed under the Apache 2.0 license.
+
+2)  Json:           Copyright by Niels Lohmann
+                    Distributed under the MIT license.
+
+3)  BPrinter:       Copyright by Dat Chu
+                    Distributed under the BSD license.
+
+4)  BsplineImage.h: For this class, the spline interpolation code 
+                    of Philippe Thevenaz has been used as reference
+                    implementation (http://bigwww.epfl.ch/thevenaz/interpolation/).

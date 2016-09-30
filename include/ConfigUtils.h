@@ -47,7 +47,6 @@ json load_json_config(){
         {"reg_rd_scaling",          {1, 1, 1}},
         {"reg_pg",                  {0, 0, 0}},
         {"reg_pg_scaling",          {1, 1, 1}},
-        {"geometric_decay",         1},
         {"num_scales",              3},
         {"restart_at",              0},
         {"num_function_evaluations",{500, 500, 500}},

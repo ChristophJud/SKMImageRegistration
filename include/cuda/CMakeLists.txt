@@ -12,6 +12,14 @@ else()
 endif()
 add_definitions(-DSpaceDimensions=${SKM_NUM_SPACE_DIMENSIONS})
 
+if(${USE_SINGLE_PRECISION})
+    add_definitions(-DSinglePrecisionType=1)
+    message(STATUS "Setting precision type to float")
+else()
+    add_definitions(-DSinglePrecisionType=0)
+    message(STATUS "Setting precision type to double")
+endif()
+
 include_directories(
     "${CMAKE_SOURCE_DIR}/include"
     "${CMAKE_SOURCE_DIR}/include/cuda"

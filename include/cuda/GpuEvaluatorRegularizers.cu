@@ -224,13 +224,16 @@ __global__ void regularizerPG(GpuParams params)
                 if(CalculateDerivative){
                     Vec3f dev(0.0);
                     ScalarType dp = 0;
-                    dp = 2.0*c_i[2]*(c_i[2]*c_j[0]-c_i[0]*c_j[2]) - 2.0*c_i[1]*(c_i[0]*c_j[1]-c_i[1]*c_j[0]);
-                    dev[0] = scale*dp/(2.0*(cp_norm2/scale+1));
-                    dp = 2.0*c_i[0]*(c_i[0]*c_j[1]-c_i[1]*c_j[0]) - 2.0*c_i[2]*(c_i[1]*c_j[2]-c_i[2]*c_j[1]);
-                    dev[1] = scale*dp/(2.0*(cp_norm2/scale+1));
-                    dp = 2.0*c_i[1]*(c_i[1]*c_j[2]-c_i[2]*c_j[1]) - 2.0*c_i[0]*(c_i[2]*c_j[0]-c_i[0]*c_j[2]);
-                    dev[2] = scale*dp/(2.0*(cp_norm2/scale+1));
-                    derivative += 2.0 * k*w_j * dev;
+                    dp = static_cast<ScalarType>(2.0)*c_i[2]*(c_i[2]*c_j[0]-c_i[0]*c_j[2]) - 
+                         static_cast<ScalarType>(2.0)*c_i[1]*(c_i[0]*c_j[1]-c_i[1]*c_j[0]);
+                    dev[0] = scale*dp/(static_cast<ScalarType>(2.0)*(cp_norm2/scale+1));
+                    dp = static_cast<ScalarType>(2.0)*c_i[0]*(c_i[0]*c_j[1]-c_i[1]*c_j[0]) - 
+                         static_cast<ScalarType>(2.0)*c_i[2]*(c_i[1]*c_j[2]-c_i[2]*c_j[1]);
+                    dev[1] = scale*dp/(static_cast<ScalarType>(2.0)*(cp_norm2/scale+1));
+                    dp = static_cast<ScalarType>(2.0)*c_i[1]*(c_i[1]*c_j[2]-c_i[2]*c_j[1]) - 
+                         static_cast<ScalarType>(2.0)*c_i[0]*(c_i[2]*c_j[0]-c_i[0]*c_j[2]);
+                    dev[2] = scale*dp/(static_cast<ScalarType>(2.0)*(cp_norm2/scale+1));
+                    derivative += static_cast<ScalarType>(2.0) * k*w_j * dev;
                 }
             }
         }
@@ -425,7 +428,6 @@ __global__ void regularizerPG(GpuParams params)
     ScalarType value = 0.0;
     Vec2f derivative(0.0);
     ScalarType scale = params.regPGScaling;
-    ScalarType eps = 1e-10;
     for (int yi = imgLower[1]; yi <= imgUpper[1]; ++yi) {
         for (int xi = imgLower[0]; xi <= imgUpper[0]; ++xi) {
             Vec2f point_i = params.cpImage.toGlobal(Vec2f(xi, yi));
@@ -442,14 +444,14 @@ __global__ void regularizerPG(GpuParams params)
             // get the parallelogram regularizer working in 2d
             ScalarType val = c_i[0]*c_j[1] - c_i[1]*c_j[0];
             ScalarType val2 = val*val;
-            value += k*w_j * scale*scale/2.0 * std::log(1.0+val2/scale);
+            value += k*w_j * scale*scale/static_cast<ScalarType>(2.0) * std::log(static_cast<ScalarType>(1.0)+val2/scale);
 
             if(CalculateDerivative){
                 Vec2f dev(0.0);
                 ScalarType factor = val2/scale + 1;
                 dev[0] = -scale*c_i[1]*val / factor;
                 dev[1] =  scale*c_i[0]*val / factor;
-                derivative += 2.0*k*w_j * dev;
+                derivative += static_cast<ScalarType>(2.0)*k*w_j * dev;
             }
         }
     }

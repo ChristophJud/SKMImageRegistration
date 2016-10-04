@@ -61,6 +61,8 @@ endif()
 include_directories(${_IncludeDirs})
 link_directories(${_LinekDirs})
 
+include( ${ITK_USE_FILE} ) # needed to register itk IO factories
+
 foreach( _filename ${test_files})
 	get_filename_component(_test ${_filename} NAME_WE)
 	add_executable(${_test} ${_filename})

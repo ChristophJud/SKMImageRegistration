@@ -255,7 +255,7 @@ typename TDisplacementFieldType::Pointer GenerateDisplacementFieldGpu(
 template<typename TTransformType, typename TImageType, typename TDisplacementFieldType>
 typename TDisplacementFieldType::Pointer GenerateDisplacementField(typename TTransformType::Pointer transform,
                                                        typename TImageType::Pointer reference_image){
-    typedef typename itk::TransformToDisplacementFieldFilter<TDisplacementFieldType> DisplacementFieldGeneratorType;
+    typedef typename itk::TransformToDisplacementFieldFilter<TDisplacementFieldType, ScalarType> DisplacementFieldGeneratorType;
     typename DisplacementFieldGeneratorType::Pointer dispfieldGenerator = DisplacementFieldGeneratorType::New();
     dispfieldGenerator->UseReferenceImageOn();
     dispfieldGenerator->SetReferenceImage(reference_image);

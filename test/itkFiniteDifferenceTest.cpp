@@ -95,7 +95,7 @@ int main (int argc, char * argv[]) {
     transform->Initialize();
 
     /** setup BSpline interpolator used by the metric */
-    typedef itk::BSplineInterpolateImageFunction<ImageType, double> InterpolatorType;
+    typedef itk::BSplineInterpolateImageFunction<ImageType, ScalarType> InterpolatorType;
     InterpolatorType::Pointer interpolator = InterpolatorType::New();
     interpolator->SetInputImage(mimage);
     interpolator->SetSplineOrder(3);

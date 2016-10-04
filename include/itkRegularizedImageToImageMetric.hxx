@@ -288,6 +288,8 @@ RegularizedImageToImageMetric<TFixedImage, TMovingImage>
 
     /** finally add regularization to loss function value */
     value += reg_value;
+
+    return value;
 }
 
 template <typename TFixedImage, typename TMovingImage>

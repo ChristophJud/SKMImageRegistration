@@ -297,7 +297,7 @@ __global__ void evaluateDerivativeMSE(GpuParams params, GpuMSEParams mse_params)
             else
                 k = params.kernel.evaluate(globalPoint, point_i);
 
-            derivative += 2.0*diff*w_i*k*gradient;
+            derivative += static_cast<ScalarType>(2.0)*diff*w_i*k*gradient;
         }
     }
 

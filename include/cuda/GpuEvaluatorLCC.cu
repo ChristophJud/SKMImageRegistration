@@ -181,8 +181,8 @@ __global__ void evaluateValueLCC(GpuParams params, GpuLCCParams lcc_params)
             ScalarType msf = sf/insideRegion;
             ScalarType msm = sm/insideRegion;
 
-            ScalarType d1 = (sff - 2.0*msf*sf + insideRegion*msf*msf);
-            ScalarType d2 = (smm - 2.0*msm*sm + insideRegion*msm*msm);
+            ScalarType d1 = (sff - static_cast<ScalarType>(2.0)*msf*sf + insideRegion*msf*msf);
+            ScalarType d2 = (smm - static_cast<ScalarType>(2.0)*msm*sm + insideRegion*msm*msm);
 
             if(d1>0 && d2>0){
                 ccvalue = sfm - msm*sf - msf*sm + insideRegion*msf*msm;
@@ -499,17 +499,17 @@ __global__ void evaluateDerivativeLCC(GpuParams params)
                     ScalarType msf = sf/insideRegion;
                     ScalarType msm = sm/insideRegion;
 
-                    ScalarType d1 = (sff - 2.0*msf*sf + insideRegion*msf*msf);
+                    ScalarType d1 = (sff - static_cast<ScalarType>(2.0)*msf*sf + insideRegion*msf*msf);
 
-                    u = d1 * (smm - 2.0*msm*sm + insideRegion*msm*msm);
+                    u = d1 * (smm - static_cast<ScalarType>(2.0)*msm*sm + insideRegion*msm*msm);
                     v = sfm - msm*sf - msf*sm + insideRegion*msf*msm;
 
 #ifndef REDUCE_REGISTER_SPILLING
-                    v_dev = 2.0*v  * (fkcmka   - msf*mkcka);
-                    u_dev = 2.0*d1 * (mkcmkcka - msm*mkcka);
+                    v_dev = static_cast<ScalarType>(2.0)*v  * (fkcmka   - msf*mkcka);
+                    u_dev = static_cast<ScalarType>(2.0)*d1 * (mkcmkcka - msm*mkcka);
 #else
-                    v_dev = 2.0*v  * (p_store[t_idx+FKCMKA]   - msf*p_store[t_idx+MKCKA]);
-                    u_dev = 2.0*d1 * (p_store[t_idx+MKCMKCKA] - msm*p_store[t_idx+MKCKA]);
+                    v_dev = static_cast<ScalarType>(2.0)*v  * (p_store[t_idx+FKCMKA]   - msf*p_store[t_idx+MKCKA]);
+                    u_dev = static_cast<ScalarType>(2.0)*d1 * (p_store[t_idx+MKCMKCKA] - msm*p_store[t_idx+MKCKA]);
 #endif
 
                     v = v*v;
@@ -671,8 +671,8 @@ __global__ void evaluateValueLCC(GpuParams params, GpuLCCParams lcc_params)
             ScalarType msf = sf/insideRegion;
             ScalarType msm = sm/insideRegion;
 
-            ScalarType d1 = (sff - 2.0*msf*sf + insideRegion*msf*msf);
-            ScalarType d2 = (smm - 2.0*msm*sm + insideRegion*msm*msm);
+            ScalarType d1 = (sff - static_cast<ScalarType>(2.0)*msf*sf + insideRegion*msf*msf);
+            ScalarType d2 = (smm - static_cast<ScalarType>(2.0)*msm*sm + insideRegion*msm*msm);
 
             if(d1>0 && d2>0){
                 ccvalue = sfm - msm*sf - msf*sm + insideRegion*msf*msm;
@@ -937,13 +937,13 @@ __global__ void evaluateDerivativeLCC(GpuParams params)
                     ScalarType msf = sf/insideRegion;
                     ScalarType msm = sm/insideRegion;
 
-                    ScalarType d1 = (sff - 2.0*msf*sf + insideRegion*msf*msf);
+                    ScalarType d1 = (sff - static_cast<ScalarType>(2.0)*msf*sf + insideRegion*msf*msf);
 
-                    u = d1 * (smm - 2.0*msm*sm + insideRegion*msm*msm);
+                    u = d1 * (smm - static_cast<ScalarType>(2.0)*msm*sm + insideRegion*msm*msm);
                     v = sfm - msm*sf - msf*sm + insideRegion*msf*msm;
 
-                    v_dev = 2.0*v  * (fkcmka   - msf*mkcka);
-                    u_dev = 2.0*d1 * (mkcmkcka - msm*mkcka);                    
+                    v_dev = static_cast<ScalarType>(2.0)*v  * (fkcmka   - msf*mkcka);
+                    u_dev = static_cast<ScalarType>(2.0)*d1 * (mkcmkcka - msm*mkcka);                    
                     
                     v = v*v;
 

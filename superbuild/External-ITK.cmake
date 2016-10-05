@@ -21,7 +21,7 @@ endif()
 ExternalProject_Add(ITK
   DEPENDS ${ITK_DEPENDENCIES}
   GIT_REPOSITORY ${git_protocol}://github.com/InsightSoftwareConsortium/ITK.git
-  GIT_TAG master
+  GIT_TAG v4.10.0
   SOURCE_DIR ITK
   BINARY_DIR ITK-build
   UPDATE_COMMAND ""
@@ -44,4 +44,4 @@ ExternalProject_Add(ITK
     -DITK_USE_FLOAT_SPACE_PRECISION:BOOL=${USE_SINGLE_PRECISION}
 )
 
-set( ITK_DIR ${INSTALL_DEPENDENCIES_DIR}/lib/cmake/ITK-4.11/ )
+set( ITK_DIR ${INSTALL_DEPENDENCIES_DIR}/lib/cmake/ITK-4.10/ )

@@ -67,10 +67,15 @@ set(_Libraries
     bprinter
     GpuEvaluator
 )
-set( _Apps
-	SKMReg
-    SKMRegv4
-)
+
+set( _Apps)
+
+if(NOT ${USE_SINGLE_PRECISION})
+set( _Apps ${_Apps} SKMReg)
+endif()
+
+set( _Apps ${_Apps} SKMRegv4)
+
 
 include_directories(${_IncludeDirs})
 link_directories(${_LinekDirs})

@@ -69,6 +69,7 @@ set(_Libraries
 )
 set( _Apps
 	SKMReg
+    SKMRegv4
 )
 
 include_directories(${_IncludeDirs})

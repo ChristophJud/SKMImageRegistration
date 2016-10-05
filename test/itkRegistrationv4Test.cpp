@@ -116,6 +116,7 @@ int main (int argc, char * argv[]) {
     metric->SetSubSampleNeighborhood(subsampleneighborhood);
 
     metric->DoResamplingOff(); // for finite difference test, resampling before each evaluation has to be turned off
+    metric->UseNegativeGradientOff();
 
     /** set regularizers **/
     //metric->SetRegularizerRKHS(0.01);
@@ -129,7 +130,7 @@ int main (int argc, char * argv[]) {
 #if SinglePrecisionType==0
     double delta = 0.0001;
 #else
-    double delta = 0.01;
+    double delta = 0.1;
 #endif
     std::cout << "Delta is: " << delta << std::endl;
 

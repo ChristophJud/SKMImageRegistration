@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.3)
 
-project(SKM VERSION 0.0.1 LANGUAGES CXX)
+project(SKM VERSION 0.2 LANGUAGES CXX)
 
 # set build type
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)

@@ -20,7 +20,6 @@
 
 #include <itkImageFileReader.h>
 #include <itkImageFileWriter.h>
-#include <itkVTKPolyDataReader.h>
 
 // Templated itk ReadImage function.
 // Attention: if nifti files are readed, the intend_code in the header

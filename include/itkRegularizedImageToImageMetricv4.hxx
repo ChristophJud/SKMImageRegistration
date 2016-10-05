@@ -23,14 +23,14 @@
 
 #include <itkImageRegionConstIteratorWithIndex.h>
 
-#include "itkRegularizedImageToImageMetric.h"
+#include "itkRegularizedImageToImageMetricv4.h"
 #include "itkGlue.h"
 
 namespace itk{
 
-template <typename TFixedImage, typename TMovingImage>
-RegularizedImageToImageMetric<TFixedImage, TMovingImage>
-::RegularizedImageToImageMetric() : 
+template <class TFixedImage, class TMovingImage, class TVirtualImage, typename TInternalComputationValueType>
+RegularizedImageToImageMetricv4<TFixedImage,TMovingImage,TVirtualImage,TInternalComputationValueType>
+::RegularizedImageToImageMetricv4() : 
     m_SubSample(1),
     m_SubSampleNeighborhood(1),
     m_UseNccMetric(false),
@@ -43,11 +43,9 @@ RegularizedImageToImageMetric<TFixedImage, TMovingImage>
     m_RegularizerPG(0),
     m_RegularizerRDScaling(1.0),
     m_RegularizerPGScaling(1.0),
-    m_DoResampling(true)
+    m_DoResampling(true),
+    m_UseNegativeGradient(true)
 {
-    this->SetComputeGradient(true);
-    this->SetUseAllPixels(true);
-
     m_OutputFilename = "/tmp/output.txt";
 
 #if SpaceDimensions == 3
@@ -56,22 +54,24 @@ RegularizedImageToImageMetric<TFixedImage, TMovingImage>
 #endif
 
     // set default print function
-    printFunction = [](const RegularizedImageToImageMetric<TFixedImage, TMovingImage>::TemporaryValuesType v){};
+    printFunction = [](const RegularizedImageToImageMetricv4<TFixedImage,TMovingImage,TVirtualImage,TInternalComputationValueType>::TemporaryValuesType v){};
+
+    // TODO: set number of threads to 1
 }
 
-template <typename TFixedImage, typename TMovingImage>
-RegularizedImageToImageMetric<TFixedImage, TMovingImage>
-::~RegularizedImageToImageMetric()
+template <class TFixedImage, class TMovingImage, class TVirtualImage, typename TInternalComputationValueType>
+RegularizedImageToImageMetricv4<TFixedImage,TMovingImage,TVirtualImage,TInternalComputationValueType>
+::~RegularizedImageToImageMetricv4()
 {
 }
 
-template <typename TFixedImage, typename TMovingImage>
+template <class TFixedImage, class TMovingImage, class TVirtualImage, typename TInternalComputationValueType>
 void
-RegularizedImageToImageMetric<TFixedImage, TMovingImage>
+RegularizedImageToImageMetricv4<TFixedImage,TMovingImage,TVirtualImage,TInternalComputationValueType>
 ::Initialize()
 throw ( ExceptionObject )
 {
-    this->Superclass::Initialize();
+    Superclass::Initialize();
 
     if(m_RegularizerL1<0 || m_RegularizerL21<0  ||
        m_RegularizerL2<0 || m_RegularizerRKHS<0 ||
@@ -90,14 +90,13 @@ throw ( ExceptionObject )
     if(m_SubSampleNeighborhood==0 || m_SubSampleNeighborhood>100){
         itkExceptionMacro("Neighborhood sampling rate inproper."); return;
     }
-
 }
 
-template <typename TFixedImage, typename TMovingImage>
-typename RegularizedImageToImageMetric<TFixedImage, TMovingImage>
+template <class TFixedImage, class TMovingImage, class TVirtualImage, typename TInternalComputationValueType>
+typename RegularizedImageToImageMetricv4<TFixedImage,TMovingImage,TVirtualImage,TInternalComputationValueType>
 ::MeasureType
-RegularizedImageToImageMetric<TFixedImage, TMovingImage>
-::GetValue(const ParametersType & parameters) const
+RegularizedImageToImageMetricv4<TFixedImage,TMovingImage,TVirtualImage,TInternalComputationValueType>
+::GetValue() const
 {
     MeasureType value = 0;
 
@@ -106,7 +105,7 @@ RegularizedImageToImageMetric<TFixedImage, TMovingImage>
     typedef Mat<ScalarType, SpaceDimensions> MatF;
 
     /** update parameters of transform */
-    this->m_Transform->SetParameters(parameters);
+    auto parameters = this->m_MovingTransform->GetParameters();
 
     /** regularization values */
     double reg_value_l1     = 0;    // l1 regularization value (switch: m_RegularizerL1)
@@ -121,12 +120,12 @@ RegularizedImageToImageMetric<TFixedImage, TMovingImage>
     /** prepare transform pointers */
     const TransformAdapterType *transform;
     const SummationTransformType *sumTransform = 
-                dynamic_cast<const SummationTransformType *>((const TransformType *)this->m_Transform);
+                dynamic_cast<const SummationTransformType *>((const MovingTransformType *)this->m_MovingTransform);
     if(sumTransform){
         transform = dynamic_cast<const TransformAdapterType *>(sumTransform->GetBackTransform());
     }
     else{
-        transform = dynamic_cast<const TransformAdapterType *>((const TransformType *)this->m_Transform);
+        transform = dynamic_cast<const TransformAdapterType *>((const MovingTransformType *)this->m_MovingTransform);
     }
     if(!transform){
         itkExceptionMacro("Transform type not supported."); return 0;
@@ -288,39 +287,35 @@ RegularizedImageToImageMetric<TFixedImage, TMovingImage>
 
     /** finally add regularization to loss function value */
     value += reg_value;
-
     return value;
 }
 
-template <typename TFixedImage, typename TMovingImage>
+template <class TFixedImage, class TMovingImage, class TVirtualImage, typename TInternalComputationValueType>
 void
-RegularizedImageToImageMetric<TFixedImage, TMovingImage>
-::GetDerivative(const ParametersType & parameters,
-                DerivativeType & derivative) const
+RegularizedImageToImageMetricv4<TFixedImage,TMovingImage,TVirtualImage,TInternalComputationValueType>
+::GetDerivative(DerivativeType & derivative) const
 {
     MeasureType value;
     // call the combined version
-    this->GetValueAndDerivative(parameters, value, derivative);
+    this->GetValueAndDerivative(value, derivative);
 }
 
-template <typename TFixedImage, typename TMovingImage>
+template <class TFixedImage, class TMovingImage, class TVirtualImage, typename TInternalComputationValueType>
 void
-RegularizedImageToImageMetric<TFixedImage, TMovingImage>
-::GetValueAndDerivative(const ParametersType & parameters,
-                        MeasureType & value,
+RegularizedImageToImageMetricv4<TFixedImage,TMovingImage,TVirtualImage,TInternalComputationValueType>
+::GetValueAndDerivative(MeasureType & value,
                         DerivativeType & derivative) const
 {
-
     /** typedefs for cuda image types */
     typedef Vec<ScalarType, SpaceDimensions> VecF;
     typedef Mat<ScalarType, SpaceDimensions> MatF;
 
     /** update parameters of transform */
-    this->m_Transform->SetParameters(parameters);
+    auto parameters = this->m_MovingTransform->GetParameters();
 
     /** create derivative vector if it has not the right size */
-    if( derivative.GetSize() != this->m_NumberOfParameters ){
-        derivative = DerivativeType(this->m_NumberOfParameters);
+    if( derivative.GetSize() != this->m_MovingTransform->GetNumberOfParameters() ){
+        derivative = DerivativeType(this->m_MovingTransform->GetNumberOfParameters());
     }
 
     /** regularization values */
@@ -336,12 +331,12 @@ RegularizedImageToImageMetric<TFixedImage, TMovingImage>
     /** prepare transform pointers */
     const TransformAdapterType *transform;
     const SummationTransformType *sumTransform = 
-                dynamic_cast<const SummationTransformType *>((const TransformType *)this->m_Transform);
+                dynamic_cast<const SummationTransformType *>((const MovingTransformType *)this->m_MovingTransform);
     if(sumTransform){
         transform = dynamic_cast<const TransformAdapterType *>(sumTransform->GetBackTransform());
     }
     else{
-        transform = dynamic_cast<const TransformAdapterType *>((const TransformType *)this->m_Transform);
+        transform = dynamic_cast<const TransformAdapterType *>((const MovingTransformType *)this->m_MovingTransform);
     }
     if(!transform){
         itkExceptionMacro("Transform type not supported."); return;
@@ -433,7 +428,7 @@ RegularizedImageToImageMetric<TFixedImage, TMovingImage>
             else if(x==0) return 0;
             else return 1;
         };
-        for( unsigned int parameter = 0; parameter < this->m_NumberOfParameters; parameter++ ){
+        for( unsigned int parameter = 0; parameter < this->m_MovingTransform->GetNumberOfParameters(); parameter++ ){
             /// calculate subgradient of l1 norm
             ParametersValueType par = parameters[parameter];
             if(std::abs(par) > 0){
@@ -517,6 +512,9 @@ RegularizedImageToImageMetric<TFixedImage, TMovingImage>
         }
     }
 
+    if(m_UseNegativeGradient)
+        derivative = static_cast<ScalarType>(-1.0) * derivative;
+
     /** sum up regularization values */
     double reg_value = 0;
     if(m_RegularizerL1   > 0) reg_value += m_RegularizerL1   * reg_value_l1;
@@ -561,17 +559,24 @@ RegularizedImageToImageMetric<TFixedImage, TMovingImage>
     value += reg_value;
 }
 
-template <typename TFixedImage, typename TMovingImage>
+template <class TFixedImage, class TMovingImage, class TVirtualImage, typename TInternalComputationValueType>
+bool 
+RegularizedImageToImageMetricv4<TFixedImage,TMovingImage,TVirtualImage,TInternalComputationValueType>
+::SupportsArbitraryVirtualDomainSamples( void ) const{
+    return false;
+}
+
+template <class TFixedImage, class TMovingImage, class TVirtualImage, typename TInternalComputationValueType>
 template<typename Printer>
 void
-RegularizedImageToImageMetric<TFixedImage, TMovingImage>
+RegularizedImageToImageMetricv4<TFixedImage,TMovingImage,TVirtualImage,TInternalComputationValueType>
 ::SetPrintFunction(Printer&& p){
     printFunction = p;
 }
 
-template <typename TFixedImage, typename TMovingImage>
-inline typename RegularizedImageToImageMetric<TFixedImage, TMovingImage>::MeasureType
-RegularizedImageToImageMetric<TFixedImage, TMovingImage>
+template <class TFixedImage, class TMovingImage, class TVirtualImage, typename TInternalComputationValueType>
+inline typename RegularizedImageToImageMetricv4<TFixedImage,TMovingImage,TVirtualImage,TInternalComputationValueType>::MeasureType
+RegularizedImageToImageMetricv4<TFixedImage,TMovingImage,TVirtualImage,TInternalComputationValueType>
 ::GetTRE() const{
     if(m_FixedLandmarks.size()==0 || m_MovingLandmarks.size()==0 ||
             m_FixedLandmarks.size() != m_MovingLandmarks.size()){
@@ -581,7 +586,7 @@ RegularizedImageToImageMetric<TFixedImage, TMovingImage>
     PointListType points;
     // transform target points
     for(unsigned i=0; i<m_FixedLandmarks.size(); i++){
-        points.push_back(this->m_Transform->TransformPoint(m_FixedLandmarks[i]));
+        points.push_back(this->m_MovingTransform->TransformPoint(m_FixedLandmarks[i]));
     }
 
     MeasureType tre = 0;
@@ -589,6 +594,14 @@ RegularizedImageToImageMetric<TFixedImage, TMovingImage>
         tre += (points[i]-m_MovingLandmarks[i]).GetNorm();
     }
     return tre/m_FixedLandmarks.size();
+}
+
+template <class TFixedImage, class TMovingImage, class TVirtualImage, typename TInternalComputationValueType>
+void
+RegularizedImageToImageMetricv4<TFixedImage,TMovingImage,TVirtualImage,TInternalComputationValueType>
+::PrintSelf(std::ostream& os, Indent indent) const
+{
+  Superclass::PrintSelf(os, indent);
 }
 
 } // namespace itk

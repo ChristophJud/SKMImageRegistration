@@ -190,8 +190,8 @@ ComputeAnisotropicTensor(ImageType::Pointer input_mask, double sigma, double wei
 
 #if SpaceDimensions==2
 
-            double magnitude1 = M.GetVnlMatrix().get_row(1).two_norm(); // largest eigenvector
-            double magnitude2 = M.GetVnlMatrix().get_row(0).two_norm();
+            ScalarType magnitude1 = M.GetVnlMatrix().get_row(1).two_norm(); // largest eigenvector
+            ScalarType magnitude2 = M.GetVnlMatrix().get_row(0).two_norm();
 
             // assumption: if first component is greater than 1e-8, the second one is not zero as well
             if(magnitude1>1e-8 && magnitude2>1e-8){

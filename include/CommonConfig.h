@@ -26,7 +26,13 @@
 #error Only space dimensions of 2 or 3 are supported
 #endif
 
+#if SinglePrecisionType==0
 typedef double ScalarType;
+#elif SinglePrecisionType==1
+typedef float ScalarType;
+#else
+#error Scalar type has to be defined as float or double
+#endif
 
 #ifndef USE_WENDLAND_C0
 #define USE_WENDLAND_C0 1

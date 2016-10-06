@@ -49,6 +49,8 @@ public:
     typedef typename Superclass::ScalesType         ScalesType;
     typedef typename Superclass::ParametersType     ParametersType;
 
+    typedef TInternalComputationValueType           InternalComputationValueType;
+
     itkGetConstMacro(Fmax, double);
     void SetFmax(double fmax){
         if(fmax>0)
@@ -74,10 +76,12 @@ public:
     }
 
     virtual void StartOptimization( bool doOnlyInitialization = false ) ITK_OVERRIDE;
+    virtual void ResumeOptimization() ITK_OVERRIDE;
 
     /** Estimate the learning rate based on the current gradient. */
     virtual void EstimateLearningRate() ITK_OVERRIDE;
-    virtual void ModifyCurrentTime(const IndexRangeType& subrange );
+    virtual InternalComputationValueType CalculateScalarProduct(const IndexRangeType& subrange );
+    virtual void ModifyCurrentTime(InternalComputationValueType scalarproduct );
 
 protected:
     AdaptiveStepGradientDescentOptimizerv4();
@@ -91,6 +95,8 @@ protected:
     double m_Fmin;
     double m_omega;
     double m_CurrentTime;
+
+    DerivativeType m_TemporalGradient;
 
 private:
     AdaptiveStepGradientDescentOptimizerv4(const Self &) = delete;

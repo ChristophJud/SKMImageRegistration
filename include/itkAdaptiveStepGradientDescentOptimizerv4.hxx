@@ -31,7 +31,7 @@ AdaptiveStepGradientDescentOptimizerv4<TInternalComputationValueType>
     m_omega(1),
     m_CurrentTime(0)
 {
-
+    this->m_UseConvergenceMonitoring = false;
 }
 
 template<typename TInternalComputationValueType>
@@ -63,11 +63,93 @@ AdaptiveStepGradientDescentOptimizerv4<TInternalComputationValueType>
 template<typename TInternalComputationValueType>
 void
 AdaptiveStepGradientDescentOptimizerv4<TInternalComputationValueType>
+::ResumeOptimization()
+{
+    this->m_StopConditionDescription.str("");
+    this->m_StopConditionDescription << this->GetNameOfClass() << ": ";
+    this->InvokeEvent( StartEvent() );
+
+    this->m_Stop = false;
+    while( ! this->m_Stop ){
+        // Do not run the loop if the maximum number of iterations is reached or its value is zero.
+        if ( this->m_CurrentIteration >= this->m_NumberOfIterations ){
+            this->m_StopConditionDescription << "Maximum number of iterations (" << this->m_NumberOfIterations << ") exceeded.";
+            this->m_StopCondition = Superclass::MAXIMUM_NUMBER_OF_ITERATIONS;
+            this->StopOptimization();
+            break;
+        }
+
+        // Save previous value with shallow swap that will be used by child optimizer.
+        swap( this->m_PreviousGradient, m_TemporalGradient );
+
+        /* Compute metric value/derivative. */
+        try{
+            /* m_Gradient will be sized as needed by metric. If it's already
+            * proper size, no new allocation is done. */
+            this->m_Metric->GetValueAndDerivative( this->m_CurrentMetricValue, this->m_Gradient );
+        }
+        catch ( ExceptionObject & err ){
+        this->m_StopCondition = Superclass::COSTFUNCTION_ERROR;
+        this->m_StopConditionDescription << "Metric error during optimization";
+        this->StopOptimization();
+
+            // Pass exception to caller
+        throw err;
+        }
+
+        m_TemporalGradient = this->m_Gradient;
+
+        /* Check if optimization has been stopped externally.
+        * (Presumably this could happen from a multi-threaded client app?) */
+        if ( this->m_Stop ){
+            this->m_StopConditionDescription << "StopOptimization() called";
+            break;
+        }
+
+        /* Check the convergence by WindowConvergenceMonitoringFunction.
+        */
+        if ( this->m_UseConvergenceMonitoring ){
+            this->m_ConvergenceMonitoring->AddEnergyValue( this->m_CurrentMetricValue );
+            try{
+                this->m_ConvergenceValue = this->m_ConvergenceMonitoring->GetConvergenceValue();
+                if (this->m_ConvergenceValue <= this->m_MinimumConvergenceValue){
+                    this->m_StopConditionDescription << "Convergence checker passed at iteration " << this->m_CurrentIteration << ".";
+                    this->m_StopCondition = Superclass::CONVERGENCE_CHECKER_PASSED;
+                    this->StopOptimization();
+                    break;
+                }
+            }
+            catch(std::exception & e){
+                std::cerr << "GetConvergenceValue() failed with exception: " << e.what() << std::endl;
+            }
+        }
+
+        /* Advance one step along the gradient.
+        * This will modify the gradient and update the transform. */
+        this->AdvanceOneStep();
+
+        /* Store best value and position */
+        if ( this->m_ReturnBestParametersAndValue && this->m_CurrentMetricValue < this->m_CurrentBestValue ){
+            this->m_CurrentBestValue = this->m_CurrentMetricValue;
+            this->m_BestParameters = this->GetCurrentPosition( );
+        }
+
+        /* Update and check iteration count */
+        this->m_CurrentIteration++;
+
+    } //while (!m_Stop)
+}
+
+template<typename TInternalComputationValueType>
+void
+AdaptiveStepGradientDescentOptimizerv4<TInternalComputationValueType>
 ::ModifyGradientByLearningRateOverSubRange( const IndexRangeType& subrange )
 {
+    auto scalarproduct = this->CalculateScalarProduct(subrange);
+
     Superclass::ModifyGradientByLearningRateOverSubRange(subrange);
 
-    this->ModifyCurrentTime(subrange);
+    this->ModifyCurrentTime(scalarproduct);
 }
 
 template<typename TInternalComputationValueType>
@@ -83,13 +165,14 @@ AdaptiveStepGradientDescentOptimizerv4<TInternalComputationValueType>
     std::cout << "\t step: " << this->m_LearningRate << std::flush;
 }
 
+
 template<typename TInternalComputationValueType>
-void
-AdaptiveStepGradientDescentOptimizerv4<TInternalComputationValueType>
-::ModifyCurrentTime(const IndexRangeType& subrange )
+typename AdaptiveStepGradientDescentOptimizerv4<TInternalComputationValueType>
+::InternalComputationValueType AdaptiveStepGradientDescentOptimizerv4<TInternalComputationValueType>
+::CalculateScalarProduct(const IndexRangeType& subrange )
 {
     if(this->m_Gradient.Size() != this->m_PreviousGradient.Size())
-        return;
+        this->m_PreviousGradient = this->m_Gradient;
 
     /// Calculate next time step
     // calculate scalar product
@@ -99,6 +182,14 @@ AdaptiveStepGradientDescentOptimizerv4<TInternalComputationValueType>
     }
     std::cout << "\t scalar product: " << scalarProduct << std::flush;
 
+    return scalarProduct;
+}
+
+template<typename TInternalComputationValueType>
+void
+AdaptiveStepGradientDescentOptimizerv4<TInternalComputationValueType>
+::ModifyCurrentTime(InternalComputationValueType scalarProduct )
+{
     // update time
     auto f = [this](double x) {
         return m_Fmin + (m_Fmax-m_Fmin)/(1 - (m_Fmax/(m_Fmin))*std::exp(-x/m_omega) );

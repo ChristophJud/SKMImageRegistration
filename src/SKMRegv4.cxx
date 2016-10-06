@@ -21,7 +21,7 @@
 #include <chrono>
 #include <iomanip>
 
-#include "itkRegularStepGradientDescentOptimizerv4.h"
+#include "itkAdaptiveStepGradientDescentOptimizerv4.h"
 #include "itkIterationObserver.h"
 
 // itk includes
@@ -387,16 +387,25 @@ void skmreg(const json& config){
         metric->SetPrintFunction(std::bind(print,metric.GetPointer(),std::placeholders::_1));
 
         /** setup optimizer */
-        typedef itk::RegularStepGradientDescentOptimizerv4<ScalarType>   OptimizerType;
+        typedef itk::AdaptiveStepGradientDescentOptimizerv4<ScalarType>   OptimizerType;
         OptimizerType::Pointer  optimizer = OptimizerType::New();
         optimizer->SetNumberOfIterations(CURRENT("num_function_evaluations",scale,unsigned));
-        optimizer->SetLearningRate(CURRENT("initial_step_size",scale,double));
-        optimizer->ReturnBestParametersAndValueOn();
-        optimizer->SetMinimumStepLength( optimizer->GetLearningRate()/1000000.0 );
-        optimizer->SetGradientMagnitudeTolerance(1e-8);
-        optimizer->SetRelaxationFactor( 0.99 );
         optimizer->SetMetric(metric);
         optimizer->SetNumberOfThreads(1);
+        optimizer->ReturnBestParametersAndValueOn();
+
+        optimizer->Seta(CURRENT("initial_step_size",scale,double));
+        optimizer->SetA(20);
+        optimizer->Setalpha(1);
+
+        /// f parameters
+        optimizer->SetFmax(1e7);
+        optimizer->SetFmin(-1e6);
+        optimizer->Setomega(1);
+
+        /// optimizer output
+        optimizer->CalculateMagnitudeOn();
+        optimizer->CountZeroParamsOn();    
 
         /** add observer */
         typedef itk::IterationObserver<OptimizerType>  IterationObserverType;
@@ -406,26 +415,25 @@ void skmreg(const json& config){
         observer->PrintValueOff();
         observer->PrintPositionOff();
         
-        // if(metric->GetRegularizerL1()    >0 &&
-        //    metric->GetRegularizerL21()  <=0 && 
-        //    metric->GetRegularizerL2()   <=0 && 
-        //    metric->GetRegularizerRKHS() <=0 && 
-        //    metric->GetRegularizerRD()   <=0 && 
-        //    metric->GetRegularizerPG()   <=0 ){
-        //        PRINT("Optimizer", "orthant projection is on",1);
-        //        optimizer->SetOrthantProjection(true);
-        //    }
+        if(metric->GetRegularizerL1()    >0 &&
+           metric->GetRegularizerL21()  <=0 && 
+           metric->GetRegularizerL2()   <=0 && 
+           metric->GetRegularizerRKHS() <=0 && 
+           metric->GetRegularizerRD()   <=0 && 
+           metric->GetRegularizerPG()   <=0 ){
+               PRINT("Optimizer", "orthant projection is on",1);
+               optimizer->SetOrthantProjection(true);
+           }
 
-        // if(metric->GetRegularizerL1()   <=0 &&
-        //    metric->GetRegularizerL21()   >0 && 
-        //    metric->GetRegularizerL2()   <=0 && 
-        //    metric->GetRegularizerRKHS() <=0 && 
-        //    metric->GetRegularizerRD()   <=0 && 
-        //    metric->GetRegularizerPG()   <=0 ){
-        //        PRINT("Optimizer", "orthant projection is on",1);
-        //        optimizer->SetOrthantProjection(true);
-        //    }
-
+        if(metric->GetRegularizerL1()   <=0 &&
+           metric->GetRegularizerL21()   >0 && 
+           metric->GetRegularizerL2()   <=0 && 
+           metric->GetRegularizerRKHS() <=0 && 
+           metric->GetRegularizerRD()   <=0 && 
+           metric->GetRegularizerPG()   <=0 ){
+               PRINT("Optimizer", "orthant projection is on",1);
+               optimizer->SetOrthantProjection(true);
+           }
 
         // TODO: handle orthant projection
 

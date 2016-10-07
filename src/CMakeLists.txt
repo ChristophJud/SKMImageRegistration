@@ -68,13 +68,9 @@ set(_Libraries
     GpuEvaluator
 )
 
-set( _Apps)
-
-if(NOT ${USE_SINGLE_PRECISION})
-set( _Apps ${_Apps} SKMReg)
-endif()
-
-set( _Apps ${_Apps} SKMRegv4)
+set( _Apps 
+    SKMReg
+)
 
 
 include_directories(${_IncludeDirs})

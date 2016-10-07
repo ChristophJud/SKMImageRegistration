@@ -21,14 +21,13 @@
 #include <chrono>
 #include <iomanip>
 
-#include "itkAdaptiveStepGradientDescentOptimizer.h"
+#include "itkAdaptiveStepGradientDescentOptimizerv4.h"
 #include "itkIterationObserver.h"
 
 // itk includes
 #include <itkSummationTransform.h>
 #include <itkDisplacementFieldTransform.h>
 #include <itkBSplineInterpolateImageFunction.h>
-#include <itkImageRegistrationMethod.h>
 #include <itkResampleImageFilter.h>
 
 // own includes
@@ -39,7 +38,7 @@
 #include "AnisotropicTensorUtils.h"
 
 #include "itkTransformAdapter.h"
-#include "itkRegularizedImageToImageMetric.h"
+#include "itkRegularizedImageToImageMetricv4.h"
 
 // other includes
 #include "table_printer.h"
@@ -154,19 +153,17 @@ void skmreg(const json& config){
         }
 
         /** setup BSpline interpolator used by the metric */
-        typedef itk::BSplineInterpolateImageFunction<ImageType, double> InterpolatorType;
+        typedef itk::BSplineInterpolateImageFunction<ImageType, ScalarType> InterpolatorType;
         InterpolatorType::Pointer interpolator = InterpolatorType::New();
         interpolator->SetInputImage(reference_image_smoothed);
         interpolator->SetSplineOrder(3);
 
         /** setup regularized image to image metric */
         PRINT("Metric", "setting up metric",2);
-        typedef itk::RegularizedImageToImageMetric < ImageType , ImageType > MetricType;
+        typedef itk::RegularizedImageToImageMetricv4 < ImageType , ImageType, ImageType, ScalarType > MetricType;
         MetricType::Pointer metric = MetricType::New();
         metric->SetFixedImage       (target_image_smoothed);
         metric->SetMovingImage      (reference_image_smoothed);
-        metric->SetFixedImageRegion (target_image_smoothed->GetLargestPossibleRegion());
-        metric->SetInterpolator     (interpolator);
         metric->SetTransform        (multiscale_transform);
 
         /** configure regularization terms */
@@ -385,13 +382,18 @@ void skmreg(const json& config){
             std::chrono::duration<double> elapsed_seconds = t1-t0;
             std::cout << " \t(" << elapsed_seconds.count() << "s)" << std::flush;
             t0 = t1;
+            //std::cout << std::endl;
         };
         metric->SetPrintFunction(std::bind(print,metric.GetPointer(),std::placeholders::_1));
 
         /** setup optimizer */
-        typedef itk::AdaptiveStepGradientDescentOptimizer   OptimizerType;
+        typedef itk::AdaptiveStepGradientDescentOptimizerv4<ScalarType>   OptimizerType;
         OptimizerType::Pointer  optimizer = OptimizerType::New();
         optimizer->SetNumberOfIterations(CURRENT("num_function_evaluations",scale,unsigned));
+        optimizer->SetMetric(metric);
+        optimizer->SetNumberOfThreads(1);
+        optimizer->ReturnBestParametersAndValueOn();
+
         optimizer->Seta(CURRENT("initial_step_size",scale,double));
         optimizer->SetA(20);
         optimizer->Setalpha(1);
@@ -401,7 +403,9 @@ void skmreg(const json& config){
         optimizer->SetFmin(-1e6);
         optimizer->Setomega(1);
 
-        optimizer->MinimizeOn();
+        /// optimizer output
+        optimizer->CalculateMagnitudeOn();
+        optimizer->CountZeroParamsOn();    
 
         /** add observer */
         typedef itk::IterationObserver<OptimizerType>  IterationObserverType;
@@ -410,7 +414,7 @@ void skmreg(const json& config){
         observer->SetOptimizer(optimizer);
         observer->PrintValueOff();
         observer->PrintPositionOff();
-
+        
         if(metric->GetRegularizerL1()    >0 &&
            metric->GetRegularizerL21()  <=0 && 
            metric->GetRegularizerL2()   <=0 && 
@@ -431,35 +435,22 @@ void skmreg(const json& config){
                optimizer->SetOrthantProjection(true);
            }
 
-
         // TODO: handle orthant projection
-
-        /** setup registration method */
-        typedef itk::ImageRegistrationMethod<ImageType, ImageType>  RegistrationType;
-        RegistrationType::Pointer registration = RegistrationType::New();
-
-        registration->SetTransform(multiscale_transform);
-        registration->SetInterpolator(interpolator);
-        registration->SetMetric(metric);
-        registration->SetOptimizer(optimizer);
-        registration->SetFixedImage(target_image_smoothed);
-        registration->SetMovingImage(reference_image_smoothed);
-        registration->SetFixedImageRegion(target_image_smoothed->GetLargestPossibleRegion());
-        registration->SetInitialTransformParameters( multiscale_transform->GetParameters() );
-        registration->Initialize();
 
         /** start registration */
         try{
             PRINT("Application","starting optimization",1);
-            registration->Update();
+            optimizer->StartOptimization();
         }
         catch( itk::ExceptionObject & err ){
             std::cerr << err << std::endl;
             return;
         }
 
+        PRINT("Optimizer", "Stop condition: " << optimizer->GetStopConditionDescription(),1)
+
         /** set transform to best position */
-        transform->SetParameters(optimizer->GetBestPosition());
+        transform->SetParameters(optimizer->GetCurrentPosition());
  
         PRINT("Application", "writing temporal results",1)
         {
@@ -513,7 +504,7 @@ void skmreg(const json& config){
     WRITE(df, temp_directory + "/df.vtk", DisplacementFieldType);
 
     /** write final registered image */
-    typedef itk::ResampleImageFilter<ImageType, ImageType>  ResampleFilterType;
+    typedef itk::ResampleImageFilter<ImageType, ImageType, ScalarType, ScalarType>  ResampleFilterType;
     ResampleFilterType::Pointer resample = ResampleFilterType::New();
 
     typedef itk::DisplacementFieldTransform<ScalarType, SpaceDimensions>  DisplacementFieldTransform;

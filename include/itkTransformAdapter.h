@@ -40,6 +40,7 @@ public:
 	/** re-typdefing */
 	typedef typename Superclass::ParametersType 			ParametersType;
 	typedef typename Superclass::FixedParametersType 		FixedParametersType;
+	typedef typename Superclass::DerivativeType				DerivativeType;
 	typedef typename Superclass::JacobianType 				JacobianType;
 	typedef typename Superclass::InputPointType  			InputPointType;
 	typedef typename Superclass::OutputPointType 			OutputPointType;
@@ -89,7 +90,7 @@ public:
 	
 	/** Sets the value pv of the control point with index idx */
 	void SetParameter(typename ControlPointImageType::IndexType idx, typename ControlPointImageType::PixelType pv);
-
+	
 	/** get parameters as contol point image */
 	typename ControlPointImageType::Pointer GetControlPointImage()const;
 

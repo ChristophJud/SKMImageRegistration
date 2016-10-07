@@ -61,24 +61,67 @@ StandardGradientDescentOptimizerv4<TInternalComputationValueType>
 template<typename TInternalComputationValueType>
 void
 StandardGradientDescentOptimizerv4<TInternalComputationValueType>
-::ModifyGradientByLearningRateOverSubRange( const IndexRangeType& subrange )
+::StartOptimization( bool doOnlyInitialization )
 {
-    /* Loop over the range. It is inclusive. */
-    for ( IndexValueType j = subrange[0]; j <= subrange[1]; j++ ){
-        // orthant projection
-        if(m_OrthantProjection &&
-                this->m_Gradient.Size() == this->m_PreviousGradient.Size() &&
-                this->m_Gradient[j]*this->m_PreviousGradient[j] < 0){
-            this->m_Gradient[j] = 0;
-        }
-        else{
-            this->m_Gradient[j] = this->m_Gradient[j] * this->m_LearningRate;
-        }
+    if( this->m_Metric.IsNull() ){
+        itkExceptionMacro("m_Metric must be set.");
+        return;
+    }  
+
+    // starting position
+    this->m_Gradient = DerivativeType(this->m_Metric->GetNumberOfParameters());
+    this->m_Gradient.Fill(0.0);
+
+    // as CurrentPosition was in ITKv3
+    this->m_PreviousGradient = DerivativeType(this->m_Metric->GetNumberOfParameters());
+    this->m_PreviousGradient.Fill(0.0);
+
+    /* Must call the superclass version for basic validation and setup */
+    Superclass::StartOptimization( doOnlyInitialization );
+}
+
+template<typename TInternalComputationValueType>
+void
+StandardGradientDescentOptimizerv4<TInternalComputationValueType>
+::AdvanceOneStep()
+{
+    itkDebugMacro("AdvanceOneStep");
+
+    /* Begin threaded gradient modification.
+    * Scale by gradient scales, then estimate the learning
+    * rate if options are set to (using the scaled gradient),
+    * then modify by learning rate. The m_Gradient variable
+    * is modified in-place. */
+    this->ModifyGradientByScales();
+    this->EstimateLearningRate();
+    this->ModifyGradientByLearningRate();
+
+    try{
+        /* Pass graident to transform */
+        auto params = ParametersType(this->m_Gradient);
+        this->m_Metric->SetParameters( params );
+    }
+    catch ( ExceptionObject & err ){
+        this->m_StopCondition = Superclass::UPDATE_PARAMETERS_ERROR;
+        this->m_StopConditionDescription << "UpdateTransformParameters error";
+        this->StopOptimization();
+
+        // Pass exception to caller
+        throw err;
     }
 
+    this->InvokeEvent( IterationEvent() );
+}
+
+template<typename TInternalComputationValueType>
+void
+StandardGradientDescentOptimizerv4<TInternalComputationValueType>
+::ModifyGradientByLearningRateOverSubRange( const IndexRangeType& subrange )
+{
     if(m_CalculateMagnitude){
     /// Calculate gradient magnitude, just for info
         TInternalComputationValueType magnitudeSquare = 0;
+        #pragma omp parallel for reduction (+:magnitudeSquare)
         for ( IndexValueType j = subrange[0]; j <= subrange[1]; j++ ){
             const auto weighted = this->m_Gradient[j];
             magnitudeSquare += weighted * weighted;
@@ -87,15 +130,28 @@ StandardGradientDescentOptimizerv4<TInternalComputationValueType>
         std::cout << "\t magnitude: " << gradientMagnitude << std::flush;
     }
 
+    /* Loop over the range. It is inclusive. */
+    #pragma omp parallel for
+    for ( IndexValueType j = subrange[0]; j <= subrange[1]; j++ ){
+        this->m_Gradient[j] = this->m_PreviousGradient[j] + this->m_Gradient[j] * this->m_LearningRate;
+
+        // orthant projection
+        if(m_OrthantProjection &&
+                this->m_Gradient[j]*this->m_PreviousGradient[j] < 0){
+            this->m_Gradient[j] = 0;
+        }
+    }
+
     if(m_CountZeroParams){
         unsigned num_zeros = 0;
+        #pragma omp parallel for reduction (+:num_zeros)
         for ( IndexValueType j = subrange[0]; j <= subrange[1]; j++ ){
             if(this->m_Gradient[j]==0) 
                 num_zeros++;
         }
         std::cout << "\t zero params: " 
                   << 100.0*static_cast<TInternalComputationValueType>(num_zeros) /
-                     static_cast<TInternalComputationValueType>(this->m_Gradient.Size()) 
+                     static_cast<TInternalComputationValueType>(subrange[1]-subrange[0]+1) 
                   << "%" << std::flush;
     }
 }

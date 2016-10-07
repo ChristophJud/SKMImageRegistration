@@ -76,11 +76,10 @@ public:
     }
 
     virtual void StartOptimization( bool doOnlyInitialization = false ) ITK_OVERRIDE;
-    virtual void ResumeOptimization() ITK_OVERRIDE;
 
     /** Estimate the learning rate based on the current gradient. */
     virtual void EstimateLearningRate() ITK_OVERRIDE;
-    virtual InternalComputationValueType CalculateScalarProduct(const IndexRangeType& subrange );
+    virtual InternalComputationValueType CalculateScalarProduct(const IndexRangeType& subrange ) const;
     virtual void ModifyCurrentTime(InternalComputationValueType scalarproduct );
 
 protected:
@@ -96,7 +95,7 @@ protected:
     double m_omega;
     double m_CurrentTime;
 
-    DerivativeType m_TemporalGradient;
+    DerivativeType m_TemporaryGradient;
 
 private:
     AdaptiveStepGradientDescentOptimizerv4(const Self &) = delete;

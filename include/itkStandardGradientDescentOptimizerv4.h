@@ -87,6 +87,8 @@ public:
     itkSetMacro(CountZeroParams,bool);
     itkBooleanMacro(CountZeroParams);
 
+    virtual void StartOptimization( bool doOnlyInitialization = false ) ITK_OVERRIDE;
+
     /** Estimate the learning rate based on the current gradient. */
     virtual void EstimateLearningRate() ITK_OVERRIDE;
 
@@ -96,6 +98,7 @@ protected:
 
     virtual void PrintSelf(std::ostream & os, Indent indent) const ITK_OVERRIDE;
 
+    virtual void AdvanceOneStep() ITK_OVERRIDE;
     virtual void ModifyGradientByLearningRateOverSubRange( const IndexRangeType& subrange ) ITK_OVERRIDE;
 
     double m_a;

@@ -16,8 +16,8 @@ set( Json_DEPENDENCIES)
 
 ExternalProject_Add(Json
   DEPENDS ${Json_DEPENDENCIES}
-  GIT_REPOSITORY ${git_protocol}://github.com/ChristophJud/json.git
-  GIT_TAG include_dir_relocation
+  GIT_REPOSITORY ${git_protocol}://github.com/nlohmann/json.git
+  GIT_TAG develop
   SOURCE_DIR Json
   BINARY_DIR Json-build
   UPDATE_COMMAND ""

@@ -46,6 +46,9 @@ RegularizedImageToImageMetricv4<TFixedImage,TMovingImage,TVirtualImage,TInternal
     m_DoResampling(true),
     m_UseNegativeGradient(true)
 {
+    m_FixedImage  = ITK_NULLPTR;
+    m_MovingImage = ITK_NULLPTR;
+
     m_OutputFilename = "/tmp/output.txt";
 
 #if SpaceDimensions == 3
@@ -90,6 +93,16 @@ throw ( ExceptionObject )
     if(m_SubSampleNeighborhood==0 || m_SubSampleNeighborhood>100){
         itkExceptionMacro("Neighborhood sampling rate inproper."); return;
     }
+
+    if( !m_FixedImage ){
+        itkExceptionMacro("Fixed image not set.");
+    }
+
+    if( !m_MovingImage ){
+        itkExceptionMacro("Moving image not set.");
+    }
+
+    this->SetVirtualDomainFromImage(m_MovingImage);
 }
 
 template <class TFixedImage, class TMovingImage, class TVirtualImage, typename TInternalComputationValueType>

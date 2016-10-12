@@ -22,9 +22,11 @@ else()
     message(STATUS "Setting precision type to double")
 endif()
 
+find_package(CUDA REQUIRED)
 set(_IncludeDirs
 	"${CMAKE_SOURCE_DIR}/include"
 	"${CMAKE_SOURCE_DIR}/include/cuda"
+	${CUDA_INCLUDE_DIRS}   
 )
 set(_LinkDirs)
 set(_Libraries

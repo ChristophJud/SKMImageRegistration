@@ -29,6 +29,7 @@
 #include <itkDisplacementFieldTransform.h>
 #include <itkBSplineInterpolateImageFunction.h>
 #include <itkResampleImageFilter.h>
+#include <itkFileTools.h>
 
 // own includes
 #include "IOUtils.h"
@@ -600,6 +601,15 @@ int main (int argc, char * argv[]) {
     // printout config parameters
     std::cout << "Final config: " << std::endl;
     print_json_config(config);
+
+    // try to make temporary directory if it does not exists already
+    try{
+        itk::FileTools::CreateDirectory(config["temp_directory"]);
+    }
+    catch( itk::ExceptionObject & err ){
+        std::cerr << err << std::endl;
+        return -1;
+    }
 
     // start main application with derived configuration
     auto t0 = std::chrono::system_clock::now();

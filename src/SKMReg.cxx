@@ -268,7 +268,8 @@ void skmreg(const json& config){
         }
         else if(config["weight_tensor_filename"] == "none" && current_tensor_weight > 0){ // case 3
             PRINT("Transform", "calculating covariance tensor based on target image",1);
-            weight_tensor = ComputeAnisotropicTensor(target_image_smoothed, CURRENT("sigma_C4",scale,float), current_tensor_weight, 2, maximum_tilt, false, false);
+            weight_tensor = ComputeAnisotropicTensor(target_image_smoothed, CURRENT("sigma_C4",scale,float), current_tensor_weight, 2, maximum_tilt, 
+                                                        false, config["verbosity"]>=4, temp_directory);
         }
         else if(config["weight_tensor_filename"] != "none" && current_tensor_weight > 0){
             PRINT("Transform", "calculating covariance tensor based on guidance image",1);
@@ -280,7 +281,8 @@ void skmreg(const json& config){
                 std::cout << err << std::endl;
                 return;
             }
-            weight_tensor = ComputeAnisotropicTensor(guidance_image, CURRENT("sigma_C4",scale,float), current_tensor_weight, 2, maximum_tilt, false, false);
+            weight_tensor = ComputeAnisotropicTensor(guidance_image, CURRENT("sigma_C4",scale,float), current_tensor_weight, 2, maximum_tilt, 
+                                                        false, config["verbosity"]>=4, temp_directory);
         }
         else{
             PRINT("Transform", "no covariance tensor is used",1);

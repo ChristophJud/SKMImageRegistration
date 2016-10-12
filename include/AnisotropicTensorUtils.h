@@ -35,7 +35,8 @@
 
 // alignment_direction: x=0, y=1, z=2, none=negative
 itk::SymmetricEigenDecompositionImageFilter<TensorImageType,TensorImageType>::OutputImageType::Pointer
-ComputeAnisotropicTensor(ImageType::Pointer input_mask, double sigma, double weight, int alignment_direction, double& maximum_tile, bool anisotropic_filtering=true, bool write_to_tmp=true){
+ComputeAnisotropicTensor(ImageType::Pointer input_mask, double sigma, double weight, int alignment_direction, double& maximum_tile, 
+                                bool anisotropic_filtering=true, bool write_to_tmp=true, std::string temp_directory="/tmp/"){
 
     // preprocess mask
     if(anisotropic_filtering)
@@ -68,7 +69,7 @@ ComputeAnisotropicTensor(ImageType::Pointer input_mask, double sigma, double wei
     gradientFilter->Update();
 
     if(write_to_tmp)
-        WriteImage<GradientFilterType::OutputImageType>(gradientFilter->GetOutput(), "/tmp/gradient.vtk");
+        WriteImage<GradientFilterType::OutputImageType>(gradientFilter->GetOutput(), temp_directory + "/gradient_image.vtk");
 
     TensorImageType::Pointer struct_tensor = TensorImageType::New();
     struct_tensor->CopyInformation( gradientFilter->GetOutput() );
@@ -98,7 +99,7 @@ ComputeAnisotropicTensor(ImageType::Pointer input_mask, double sigma, double wei
         ++iter_tensor;
     }
     if(write_to_tmp)
-        WriteImage<TensorImageType>(struct_tensor, "/tmp/struct_tensor2.vtk");
+        WriteImage<TensorImageType>(struct_tensor, temp_directory + "/struct_tensor.vtk");
 
 
     // filter tensor image elemet-wise
@@ -156,7 +157,7 @@ ComputeAnisotropicTensor(ImageType::Pointer input_mask, double sigma, double wei
     }
 
     if(write_to_tmp)
-        WriteImage<TensorImageType>(smoothed_tensor, "/tmp/smoothed_struct_tensor2.vtk");
+        WriteImage<TensorImageType>(smoothed_tensor, temp_directory + "/smoothed_struct_tensor.vtk");
 
     typedef itk::SymmetricEigenDecompositionImageFilter<TensorImageType,TensorImageType>  SymmetricEigenDecompositionImageFilterType;
     SymmetricEigenDecompositionImageFilterType::Pointer symmetricEigenAnalysisFilter = SymmetricEigenDecompositionImageFilterType::New();
@@ -168,7 +169,7 @@ ComputeAnisotropicTensor(ImageType::Pointer input_mask, double sigma, double wei
     smoothed_tensor = symmetricEigenAnalysisFilter->GetOutput();
 
     if(write_to_tmp)
-        WriteImage<SymmetricEigenDecompositionImageFilterType::OutputImageType>(smoothed_tensor, "/tmp/main_structure.vtk");
+        WriteImage<SymmetricEigenDecompositionImageFilterType::OutputImageType>(smoothed_tensor, temp_directory + "/main_structure.vtk");
 
     // lets define the Y direction as the main direction of motion and damp first component
     typedef TensorImageType::PixelType EigenSystemMatrixType;
@@ -304,7 +305,7 @@ ComputeAnisotropicTensor(ImageType::Pointer input_mask, double sigma, double wei
     }
 
     if(write_to_tmp)
-        WriteImage<SymmetricEigenDecompositionImageFilterType::OutputImageType>(smoothed_tensor, "/tmp/directions.vtk");
+        WriteImage<SymmetricEigenDecompositionImageFilterType::OutputImageType>(smoothed_tensor, temp_directory + "/tensor_directions.vtk");
 
 
     TensorImageType::Pointer covariance_tensor = TensorImageType::New();
@@ -365,15 +366,13 @@ ComputeAnisotropicTensor(ImageType::Pointer input_mask, double sigma, double wei
         }
     }
 
-    if(write_to_tmp)
-        WriteImage<SymmetricEigenDecompositionImageFilterType::OutputImageType>(covariance_tensor, "/tmp/covariance_tensore.vtk");
-
     return covariance_tensor;
 }
 
 // alignment_direction: x=0, y=1, z=2, none=negative
 itk::SymmetricEigenDecompositionImageFilter<TensorImageType,TensorImageType>::OutputImageType::Pointer
-ComputeAnisotropicTensor(ImageType::Pointer input_mask, double sigma, double weight, int alignment_direction, bool anisotropic_filtering=true, bool write_to_tmp=true){
+ComputeAnisotropicTensor(ImageType::Pointer input_mask, double sigma, double weight, int alignment_direction, 
+                            bool anisotropic_filtering=true, bool write_to_tmp=true, std::string temp_directory="/tmp/"){
     double maximum_tile = -1;
     return ComputeAnisotropicTensor(input_mask, sigma, weight, alignment_direction, maximum_tile, anisotropic_filtering, write_to_tmp);
 }
